@@ -1,0 +1,67 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import { IpcChannel } from '../shared/ipc'
+import type {
+  ColumnInfo,
+  ConnectionConfig,
+  ConnectionDraft,
+  CsvExportRequest,
+  CsvExportResult,
+  HistoryEntry,
+  PendingMutation,
+  QueryResult,
+  SavedQuery,
+  SchemaNode,
+  TableDataOptions,
+  TableForeignKey,
+  TablePage,
+  TableRef,
+  TableStructure,
+  TestResult
+} from '../shared/types'
+
+type Draft = ConnectionDraft & { id?: string }
+
+const api = {
+  connections: {
+    list: (): Promise<ConnectionConfig[]> => ipcRenderer.invoke(IpcChannel.ConnectionsList),
+    upsert: (draft: Draft): Promise<ConnectionConfig> =>
+      ipcRenderer.invoke(IpcChannel.ConnectionsUpsert, draft),
+    delete: (id: string): Promise<void> => ipcRenderer.invoke(IpcChannel.ConnectionsDelete, id),
+    test: (draft: Draft): Promise<TestResult> => ipcRenderer.invoke(IpcChannel.ConnectionsTest, draft)
+  },
+  session: {
+    open: (id: string): Promise<void> => ipcRenderer.invoke(IpcChannel.SessionOpen, id),
+    close: (id: string): Promise<void> => ipcRenderer.invoke(IpcChannel.SessionClose, id),
+    query: (id: string, sql: string): Promise<QueryResult> =>
+      ipcRenderer.invoke(IpcChannel.SessionQuery, id, sql),
+    cancel: (id: string): Promise<void> => ipcRenderer.invoke(IpcChannel.SessionCancel, id),
+    schema: (id: string): Promise<SchemaNode[]> => ipcRenderer.invoke(IpcChannel.SessionSchema, id),
+    columns: (id: string): Promise<ColumnInfo[]> => ipcRenderer.invoke(IpcChannel.SessionColumns, id),
+    tableData: (id: string, opts: TableDataOptions): Promise<TablePage> =>
+      ipcRenderer.invoke(IpcChannel.SessionTableData, id, opts),
+    tableStructure: (id: string, ref: TableRef): Promise<TableStructure> =>
+      ipcRenderer.invoke(IpcChannel.SessionTableStructure, id, ref),
+    tableForeignKeys: (id: string, ref: TableRef): Promise<TableForeignKey[]> =>
+      ipcRenderer.invoke(IpcChannel.SessionTableForeignKeys, id, ref),
+    previewMutations: (id: string, mutations: PendingMutation[]): Promise<string[]> =>
+      ipcRenderer.invoke(IpcChannel.SessionPreviewMutations, id, mutations),
+    commitMutations: (id: string, mutations: PendingMutation[]): Promise<void> =>
+      ipcRenderer.invoke(IpcChannel.SessionCommitMutations, id, mutations)
+  },
+  savedQueries: {
+    list: (): Promise<SavedQuery[]> => ipcRenderer.invoke(IpcChannel.SavedQueriesList),
+    upsert: (q: SavedQuery): Promise<SavedQuery> =>
+      ipcRenderer.invoke(IpcChannel.SavedQueriesUpsert, q),
+    delete: (id: string): Promise<void> => ipcRenderer.invoke(IpcChannel.SavedQueriesDelete, id)
+  },
+  history: {
+    list: (): Promise<HistoryEntry[]> => ipcRenderer.invoke(IpcChannel.HistoryList),
+    clear: (): Promise<void> => ipcRenderer.invoke(IpcChannel.HistoryClear)
+  },
+  exportCsv: (req: CsvExportRequest): Promise<CsvExportResult> =>
+    ipcRenderer.invoke(IpcChannel.ExportCsv, req)
+}
+
+contextBridge.exposeInMainWorld('api', api)
+
+export type Api = typeof api
