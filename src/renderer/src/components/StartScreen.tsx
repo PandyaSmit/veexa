@@ -1,6 +1,7 @@
 import { Database, Plus } from 'lucide-react'
 import { useConnections } from '../store/connections'
 import { useUi } from '../store/ui'
+import { modKey } from '../lib/platform'
 
 export function StartScreen() {
   const items = useConnections((s) => s.items)
@@ -10,13 +11,13 @@ export function StartScreen() {
   return (
     <div className="flex-1 flex items-center justify-center overflow-auto bg-surface">
       <div className="w-[640px] max-w-full px-8 py-10">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 rounded-md bg-accent text-accent-fg flex items-center justify-center">
-            <Database size={18} strokeWidth={2.5} />
+        <div className="flex items-baseline mb-4 mt-2">
+          <div className="text-[2.75rem] font-black tracking-[0.15em] text-fg leading-none" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            VEEXA
           </div>
-          <div className="text-2xl font-semibold text-fg">Veexa</div>
+          <div className="w-3 h-3 bg-[#FFC107] ml-2"></div>
         </div>
-        <div className="text-sm text-fg-muted mb-8 ml-10">
+        <div className="text-sm text-fg-muted mb-8">
           Connect to a database to get started.
         </div>
 
@@ -45,10 +46,10 @@ export function StartScreen() {
           </button>
         </div>
 
-        <div className="text-[11px] text-fg-subtle">
+        <div className="text-[11px] text-fg-subtle mt-10">
           Tip: press{' '}
-          <kbd className="px-1.5 py-0.5 rounded border border-line bg-surface-elevated text-fg-muted">
-            ⌘K
+          <kbd className="px-1.5 py-0.5 rounded border border-line bg-surface-elevated text-fg-muted font-sans">
+            {modKey()}K
           </kbd>{' '}
           to open the command palette.
         </div>

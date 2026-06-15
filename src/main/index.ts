@@ -4,6 +4,8 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpc } from './ipc'
 import { closeAllSessions } from './database/sessions'
 
+const isMac = process.platform === 'darwin'
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
@@ -11,11 +13,22 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    titleBarStyle: 'hiddenInset',
-    vibrancy: 'sidebar',
-    visualEffectState: 'active',
+    icon: join(__dirname, '../../build/icon.png'),
+    // macOS: native hidden inset title bar with traffic lights
+    ...(isMac
+      ? {
+          titleBarStyle: 'hiddenInset',
+          vibrancy: 'sidebar',
+          visualEffectState: 'active',
+          trafficLightPosition: { x: 14, y: 14 }
+        }
+      : {
+          // Windows / Linux: frameless window — we render our own title bar
+          frame: false,
+          titleBarStyle: 'hidden',
+          titleBarOverlay: false
+        }),
     backgroundColor: '#111113',
-    trafficLightPosition: { x: 14, y: 14 },
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,

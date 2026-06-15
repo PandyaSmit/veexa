@@ -7,6 +7,7 @@ import { SaveQueryDialog } from '../../components/SaveQueryDialog'
 import { useTabs, type QueryTab } from '../../store/tabs'
 import { useSavedQueries } from '../../store/savedQueries'
 import { exportRowsToCsv } from '../../lib/exportCsv'
+import { modKey } from '../../lib/platform'
 
 interface Props {
   tab: QueryTab
@@ -58,7 +59,7 @@ export function QueryTabView({ tab }: Props) {
           <button
             onClick={() => setSaveOpen(true)}
             className="flex items-center gap-1 px-2 py-1 rounded-md text-fg-muted hover:text-accent hover:bg-fg/5"
-            title="Save query (⌘S)"
+            title={`Save query (${modKey()}S)`}
           >
             <Bookmark size={11} />
             Save
@@ -76,11 +77,11 @@ export function QueryTabView({ tab }: Props) {
             <button
               onClick={() => runQuery(tab.id)}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent text-accent-fg text-xs font-medium hover:opacity-90"
-              title="⌘↩"
+              title={`${modKey()}↩`}
             >
               <Play size={11} fill="currentColor" />
               Run
-              <span className="text-accent-fg/60 text-[10px] ml-0.5">⌘↩</span>
+              <span className="text-accent-fg/60 text-[10px] ml-0.5 font-sans">{modKey()}↩</span>
             </button>
           )}
         </div>

@@ -1,6 +1,6 @@
 # Veexa
 
-A modern, native-feeling macOS database explorer for PostgreSQL and MySQL.
+A modern, cross-platform database explorer for PostgreSQL and MySQL.
 
 ## Stack
 
@@ -13,10 +13,16 @@ npm install
 npm run dev
 ```
 
-## Build (macOS DMG)
+## Build
 
 ```bash
+# Package for your current OS
 npm run package
+
+# Package for specific platforms
+npm run package:win
+npm run package:mac
+npm run package:linux
 ```
 
 ## Architecture
@@ -53,6 +59,7 @@ Security: `contextIsolation: true`, `nodeIntegration: false`, strict CSP, no Nod
 - Monaco SQL editor
 - Virtualized results grid
 - CSV export (query results and table pages)
+- CSV import (append CSV data to existing tables)
 - Persistent query history (last 500 runs)
 - Destructive-query confirmation (DROP / TRUNCATE / DELETE / UPDATE / ALTER TABLE)
 - Light / dark theme with persistence
@@ -63,15 +70,15 @@ Security: `contextIsolation: true`, `nodeIntegration: false`, strict CSP, no Nod
 
 ## Keyboard shortcuts
 
-- `⌘K` — Command palette
-- `⌘N` — New connection
-- `⌘T` — New query tab
-- `⌘W` — Close tab
-- `⌘S` — Save current query
-- `⌘B` — Toggle sidebar
-- `⌘⇧L` — Toggle light/dark theme
-- `⌘↩` — Run query
-- `⌘⇧E` — Export to CSV
+- `⌘K` / `Ctrl+K` — Command palette
+- `⌘N` / `Ctrl+N` — New connection
+- `⌘T` / `Ctrl+T` — New query tab
+- `⌘W` / `Ctrl+W` — Close tab
+- `⌘S` / `Ctrl+S` — Save current query
+- `⌘B` / `Ctrl+B` — Toggle sidebar
+- `⌘⇧L` / `Ctrl+Shift+L` — Toggle light/dark theme
+- `⌘↩` / `Ctrl+Enter` — Run query
+- `⌘⇧E` / `Ctrl+Shift+E` — Export to CSV
 
 ## Roadmap
 

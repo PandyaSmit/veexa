@@ -151,3 +151,8 @@ export interface TablePage {
   total?: number
   durationMs: number
 }
+
+export interface CsvImportResult {
+  imported: boolean
+  rowCount: number
+}

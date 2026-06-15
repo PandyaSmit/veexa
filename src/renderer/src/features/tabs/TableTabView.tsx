@@ -7,6 +7,7 @@ import {
   Plus,
   RotateCw,
   Undo2,
+  Upload,
   X
 } from 'lucide-react'
 import { EditableDataGrid } from '../../components/EditableDataGrid'
@@ -273,10 +274,30 @@ function DataView({
   const data = tab.data
   const startRow = tab.page * tab.pageSize + 1
   const endRow = startRow + (data?.rows.length ?? 0) - 1
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
 
   const handleExport = () => {
     if (!data) return
     exportRowsToCsv(`${tab.ref.name}_page${tab.page + 1}`, data.columns, data.rows)
+  }
+
+  const handleImport = async () => {
+    setImporting(true)
+    setImportMsg(null)
+    try {
+      const result = await window.api.session.importCsv(tab.connectionId, tab.ref)
+      if (result.imported) {
+        setImportMsg(`Imported ${result.rowCount} rows`)
+        onReload()
+        setTimeout(() => setImportMsg(null), 3000)
+      }
+    } catch (err: any) {
+      setImportMsg(`Error: ${err?.message ?? String(err)}`)
+      setTimeout(() => setImportMsg(null), 5000)
+    } finally {
+      setImporting(false)
+    }
   }
 
   return (
@@ -361,6 +382,26 @@ function DataView({
               <Download size={11} />
               Export CSV
             </button>
+          )}
+          {!readOnly && (
+            <button
+              onClick={handleImport}
+              disabled={importing}
+              className="ml-1 flex items-center gap-1 px-2 py-0.5 text-fg-muted hover:text-accent disabled:opacity-40"
+              title="Import data from CSV file"
+            >
+              <Upload size={11} />
+              {importing ? 'Importing…' : 'Import CSV'}
+            </button>
+          )}
+          {importMsg && (
+            <span
+              className={`ml-2 text-[10px] ${
+                importMsg.startsWith('Error') ? 'text-danger' : 'text-accent'
+              }`}
+            >
+              {importMsg}
+            </span>
           )}
         </div>
       </div>

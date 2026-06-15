@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { FileCode2, Plus, Table2, X } from 'lucide-react'
 import { useTabs, type Tab } from '../store/tabs'
+import { modKey } from '../lib/platform'
 
 interface Props {
   connectionId: string
@@ -33,7 +34,7 @@ export function TabBar({ connectionId, onNewQuery }: Props) {
       <button
         onClick={onNewQuery}
         className="px-2.5 py-2 text-fg-muted hover:text-accent shrink-0"
-        title="New query (⌘T)"
+        title={`New query (${modKey()}T)`}
       >
         <Plus size={14} />
       </button>

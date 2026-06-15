@@ -6,6 +6,7 @@ import type {
   ConnectionDraft,
   CsvExportRequest,
   CsvExportResult,
+  CsvImportResult,
   HistoryEntry,
   PendingMutation,
   QueryResult,
@@ -46,7 +47,9 @@ const api = {
     previewMutations: (id: string, mutations: PendingMutation[]): Promise<string[]> =>
       ipcRenderer.invoke(IpcChannel.SessionPreviewMutations, id, mutations),
     commitMutations: (id: string, mutations: PendingMutation[]): Promise<void> =>
-      ipcRenderer.invoke(IpcChannel.SessionCommitMutations, id, mutations)
+      ipcRenderer.invoke(IpcChannel.SessionCommitMutations, id, mutations),
+    importCsv: (id: string, ref: TableRef): Promise<CsvImportResult> =>
+      ipcRenderer.invoke(IpcChannel.ImportCsv, id, ref)
   },
   savedQueries: {
     list: (): Promise<SavedQuery[]> => ipcRenderer.invoke(IpcChannel.SavedQueriesList),
@@ -59,7 +62,14 @@ const api = {
     clear: (): Promise<void> => ipcRenderer.invoke(IpcChannel.HistoryClear)
   },
   exportCsv: (req: CsvExportRequest): Promise<CsvExportResult> =>
-    ipcRenderer.invoke(IpcChannel.ExportCsv, req)
+    ipcRenderer.invoke(IpcChannel.ExportCsv, req),
+  window: {
+    minimize: (): Promise<void> => ipcRenderer.invoke(IpcChannel.WindowMinimize),
+    maximize: (): Promise<void> => ipcRenderer.invoke(IpcChannel.WindowMaximize),
+    close: (): Promise<void> => ipcRenderer.invoke(IpcChannel.WindowClose)
+  },
+  platform: (): Promise<{ platform: 'darwin' | 'win32' | 'linux' }> =>
+    ipcRenderer.invoke(IpcChannel.PlatformInfo)
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -19,7 +19,12 @@ export const IpcChannel = {
   SavedQueriesDelete: 'saved-queries:delete',
   HistoryList: 'history:list',
   HistoryClear: 'history:clear',
-  ExportCsv: 'export:csv'
+  ExportCsv: 'export:csv',
+  ImportCsv: 'import:csv',
+  WindowMinimize: 'window:minimize',
+  WindowMaximize: 'window:maximize',
+  WindowClose: 'window:close',
+  PlatformInfo: 'platform:info'
 } as const
 
 export type IpcChannelName = (typeof IpcChannel)[keyof typeof IpcChannel]

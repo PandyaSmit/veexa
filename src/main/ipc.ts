@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { IpcChannel } from '@shared/ipc'
 import type {
@@ -18,6 +18,7 @@ import { closeSession, getSession, openSession, testConnection } from './databas
 import { history } from './history'
 import { savedQueries } from './savedQueries'
 import { exportCsv } from './export'
+import { importCsv } from './import'
 
 type Draft = ConnectionDraft & { id?: string }
 
@@ -165,4 +166,27 @@ export function registerIpc(): void {
   ipcMain.handle(IpcChannel.HistoryClear, () => history.clear())
 
   ipcMain.handle(IpcChannel.ExportCsv, (_evt, req: CsvExportRequest) => exportCsv(req))
+
+  ipcMain.handle(IpcChannel.ImportCsv, (_evt, id: string, ref: TableRef) => importCsv(id, ref))
+
+  // Window controls (used by custom title bar on Windows / Linux)
+  ipcMain.handle(IpcChannel.WindowMinimize, (evt) => {
+    BrowserWindow.fromWebContents(evt.sender)?.minimize()
+  })
+  ipcMain.handle(IpcChannel.WindowMaximize, (evt) => {
+    const win = BrowserWindow.fromWebContents(evt.sender)
+    if (win?.isMaximized()) {
+      win.unmaximize()
+    } else {
+      win?.maximize()
+    }
+  })
+  ipcMain.handle(IpcChannel.WindowClose, (evt) => {
+    BrowserWindow.fromWebContents(evt.sender)?.close()
+  })
+
+  // Platform info so renderer can adapt UI per-OS
+  ipcMain.handle(IpcChannel.PlatformInfo, () => ({
+    platform: process.platform as 'darwin' | 'win32' | 'linux'
+  }))
 }

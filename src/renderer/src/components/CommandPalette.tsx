@@ -3,6 +3,7 @@ import { useConnections } from '../store/connections'
 import { useTabs } from '../store/tabs'
 import { useHistory } from '../store/history'
 import { exportRowsToCsv } from '../lib/exportCsv'
+import { modKey } from '../lib/platform'
 
 interface Props {
   open: boolean
@@ -44,12 +45,14 @@ export function CommandPalette({ open, onClose, onNewConnection }: Props) {
     }
   }, [open, loadHistory])
 
+  const mod = modKey()
+
   const actions = useMemo<Action[]>(() => {
     const list: Action[] = [
       {
         id: 'new-conn',
         label: 'New connection…',
-        hint: '⌘N',
+        hint: `${mod}N`,
         group: 'Actions',
         run: onNewConnection
       }
@@ -58,7 +61,7 @@ export function CommandPalette({ open, onClose, onNewConnection }: Props) {
       list.push({
         id: 'new-tab',
         label: 'New query tab',
-        hint: '⌘T',
+        hint: `${mod}T`,
         group: 'Actions',
         run: () => {
           openQueryTab(activeConn.id)
@@ -69,7 +72,7 @@ export function CommandPalette({ open, onClose, onNewConnection }: Props) {
       list.push({
         id: 'run',
         label: 'Run query',
-        hint: '⌘↩',
+        hint: `${mod}↩`,
         group: 'Actions',
         run: () => runQuery(activeTab.id)
       })
@@ -80,7 +83,7 @@ export function CommandPalette({ open, onClose, onNewConnection }: Props) {
         list.push({
           id: 'export-csv',
           label: 'Export results to CSV',
-          hint: '⌘⇧E',
+          hint: `${mod}⇧E`,
           group: 'Actions',
           run: () => exportRowsToCsv(`query_${Date.now()}`, r.columns, r.rows)
         })
@@ -90,7 +93,7 @@ export function CommandPalette({ open, onClose, onNewConnection }: Props) {
       list.push({
         id: 'export-csv',
         label: 'Export table page to CSV',
-        hint: '⌘⇧E',
+        hint: `${mod}⇧E`,
         group: 'Actions',
         run: () =>
           exportRowsToCsv(
@@ -129,7 +132,8 @@ export function CommandPalette({ open, onClose, onNewConnection }: Props) {
     onNewConnection,
     openQueryTab,
     runQuery,
-    setActiveConn
+    setActiveConn,
+    mod
   ])
 
   const filtered = useMemo(() => {

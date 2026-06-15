@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  ArrowLeft,
   Bookmark,
   ChevronRight,
   Database,
@@ -19,10 +20,11 @@ import { usePins } from '../store/pins'
 import { useSavedQueries } from '../store/savedQueries'
 import { useSchemaCache } from '../store/schemaCache'
 import { setSchemaSuggestions } from '../lib/sqlAutocomplete'
+import { modKey } from '../lib/platform'
 import type { SchemaNode, TableRef } from '@shared/types'
 
 export function Sidebar() {
-  const { items, activeId, setActive, remove, load } = useConnections()
+  const { items, activeId, setActive, remove, load, disconnect } = useConnections()
   const openNew = useUi((s) => s.openNewConnection)
   const openEdit = useUi((s) => s.openEditConnection)
   const setConnectionError = useUi((s) => s.setConnectionError)
@@ -41,6 +43,8 @@ export function Sidebar() {
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [expandedSection, setExpandedSection] = useState<Record<string, boolean>>({})
+
+  const activeConnection = items.find((c) => c.id === activeId) ?? null
 
   useEffect(() => {
     load()
@@ -100,80 +104,110 @@ export function Sidebar() {
     [savedItems, activeId]
   )
 
+  const handleDisconnect = async () => {
+    if (activeId) closeForConnection(activeId)
+    await disconnect()
+  }
+
   return (
     <aside className="w-64 shrink-0 flex flex-col border-r border-line/70 bg-surface-raised">
-      <div className="flex items-center justify-between px-3 py-2 text-[10px] uppercase tracking-wider text-fg-subtle">
-        <span>Connections</span>
-        <button
-          onClick={openNew}
-          className="no-drag p-1 -mr-1 rounded text-fg-muted hover:text-accent hover:bg-fg/5"
-          title="New connection (⌘N)"
-        >
-          <Plus size={13} />
-        </button>
-      </div>
-
-      <div className="px-2 space-y-0.5">
-        {items.map((c) => {
-          const active = activeId === c.id
-          return (
-            <div
-              key={c.id}
-              className={`group rounded-md px-2 py-1.5 text-sm cursor-pointer flex items-center justify-between ${
-                active
-                  ? 'bg-accent/15 text-fg border-l-2 border-accent -ml-[2px] pl-[10px]'
-                  : 'text-fg-muted hover:bg-fg/5 hover:text-fg'
-              }`}
-              onClick={() => setActive(c.id)}
+      {/* Header: Disconnect bar when connected, Connections list when not */}
+      {activeId && activeConnection ? (
+        <>
+          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-line/70">
+            <button
+              onClick={handleDisconnect}
+              className="no-drag p-1 rounded text-fg-muted hover:text-accent hover:bg-fg/5"
+              title="Disconnect and go back"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <Database
-                  size={14}
-                  className={active ? 'text-accent shrink-0' : 'text-fg-subtle shrink-0'}
-                />
-                <div className="min-w-0">
-                  <div className="truncate text-[13px]">{c.name}</div>
-                  <div className="text-[10px] text-fg-subtle truncate">
-                    {c.driver} · {c.host}/{c.database}
-                  </div>
-                </div>
+              <ArrowLeft size={14} />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-fg truncate">
+                {activeConnection.name}
               </div>
-              <div className="opacity-0 group-hover:opacity-100 flex gap-0.5 shrink-0">
-                <button
-                  className="p-1 text-fg-muted hover:text-fg rounded"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    openEdit(c.id)
-                  }}
-                  title="Edit"
-                >
-                  <Pencil size={12} />
-                </button>
-                <button
-                  className="p-1 text-fg-subtle hover:text-danger rounded"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (confirm(`Delete connection "${c.name}"?`)) {
-                      closeForConnection(c.id)
-                      remove(c.id)
-                    }
-                  }}
-                  title="Delete"
-                >
-                  <Trash2 size={12} />
-                </button>
+              <div className="text-[10px] text-fg-subtle truncate">
+                {activeConnection.driver} · {activeConnection.host}/{activeConnection.database}
               </div>
             </div>
-          )
-        })}
-        {items.length === 0 && (
-          <div className="px-2 py-6 text-center text-xs text-fg-subtle">
-            No connections yet.
-            <br />
-            Click + to create one.
           </div>
-        )}
-      </div>
+        </>
+      ) : (
+        <>
+          <div className="flex items-center justify-between px-3 py-2 text-[10px] uppercase tracking-wider text-fg-subtle">
+            <span>Connections</span>
+            <button
+              onClick={openNew}
+              className="no-drag p-1 -mr-1 rounded text-fg-muted hover:text-accent hover:bg-fg/5"
+              title={`New connection (${modKey()}N)`}
+            >
+              <Plus size={13} />
+            </button>
+          </div>
+
+          <div className="px-2 space-y-0.5">
+            {items.map((c) => {
+              const active = activeId === c.id
+              return (
+                <div
+                  key={c.id}
+                  className={`group rounded-md px-2 py-1.5 text-sm cursor-pointer flex items-center justify-between ${
+                    active
+                      ? 'bg-accent/15 text-fg border-l-2 border-accent -ml-[2px] pl-[10px]'
+                      : 'text-fg-muted hover:bg-fg/5 hover:text-fg'
+                  }`}
+                  onClick={() => setActive(c.id)}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Database
+                      size={14}
+                      className={active ? 'text-accent shrink-0' : 'text-fg-subtle shrink-0'}
+                    />
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px]">{c.name}</div>
+                      <div className="text-[10px] text-fg-subtle truncate">
+                        {c.driver} · {c.host}/{c.database}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="opacity-0 group-hover:opacity-100 flex gap-0.5 shrink-0">
+                    <button
+                      className="p-1 text-fg-muted hover:text-fg rounded"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openEdit(c.id)
+                      }}
+                      title="Edit"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      className="p-1 text-fg-subtle hover:text-danger rounded"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm(`Delete connection "${c.name}"?`)) {
+                          closeForConnection(c.id)
+                          remove(c.id)
+                        }
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+            {items.length === 0 && (
+              <div className="px-2 py-6 text-center text-xs text-fg-subtle">
+                No connections yet.
+                <br />
+                Click + to create one.
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {activeId && (
         <>
@@ -428,3 +462,4 @@ function filterSchema(schemas: SchemaNode[], filter: string): SchemaNode[] {
     }))
     .filter((s) => (s.children?.length ?? 0) > 0 || s.name.toLowerCase().includes(q))
 }
+

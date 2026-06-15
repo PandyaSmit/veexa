@@ -9,6 +9,7 @@ interface ConnectionsState {
   upsert: (draft: ConnectionDraft & { id?: string }) => Promise<ConnectionConfig>
   remove: (id: string) => Promise<void>
   setActive: (id: string | null) => void
+  disconnect: () => Promise<void>
 }
 
 export const useConnections = create<ConnectionsState>((set, get) => ({
@@ -36,5 +37,15 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   },
   setActive(id) {
     set({ activeId: id })
+  },
+  async disconnect() {
+    const id = get().activeId
+    if (!id) return
+    try {
+      await window.api.session.close(id)
+    } catch {
+      /* swallow – session may already be closed */
+    }
+    set({ activeId: null })
   }
 }))
