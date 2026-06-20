@@ -30,6 +30,7 @@ export function Sidebar() {
   const setConnectionError = useUi((s) => s.setConnectionError)
   const loadSchemaCache = useSchemaCache((s) => s.load)
   const openTableTab = useTabs((s) => s.openTableTab)
+  const openCreateTableTab = useTabs((s) => s.openCreateTableTab)
   const openQueryTab = useTabs((s) => s.openQueryTab)
   const closeForConnection = useTabs((s) => s.closeForConnection)
   const pinsByConnection = usePins((s) => s.byConnection)
@@ -241,17 +242,26 @@ export function Sidebar() {
           )}
 
           <div className="px-2 pt-3 pb-2">
-            <div className="relative">
-              <Search
-                size={12}
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-fg-subtle"
-              />
-              <input
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Filter tables…"
-                className="w-full bg-surface border border-line rounded-md pl-7 pr-2 py-1 text-xs text-fg placeholder:text-fg-subtle focus:outline-none focus:border-accent/70"
-              />
+            <div className="flex items-center gap-1">
+              <div className="relative flex-1">
+                <Search
+                  size={12}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-fg-subtle"
+                />
+                <input
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder="Filter tables…"
+                  className="w-full bg-surface border border-line rounded-md pl-7 pr-2 py-1 text-xs text-fg placeholder:text-fg-subtle focus:outline-none focus:border-accent/70"
+                />
+              </div>
+              <button
+                onClick={() => openCreateTableTab(activeId)}
+                className="p-1.5 rounded-md border border-line text-fg-subtle hover:text-accent hover:border-accent/60"
+                title="Create New Table"
+              >
+                <Plus size={12} />
+              </button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto px-2 pb-3">

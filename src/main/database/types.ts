@@ -1,6 +1,7 @@
 import type {
   ColumnInfo,
   ConnectionConfig,
+  CreateTableDefinition,
   PendingMutation,
   QueryResult,
   SchemaNode,
@@ -22,5 +23,7 @@ export interface Driver {
   tableForeignKeys(ref: TableRef): Promise<TableForeignKey[]>
   previewMutations(mutations: PendingMutation[]): string[]
   commitMutations(mutations: PendingMutation[]): Promise<void>
+  previewCreateTable(def: CreateTableDefinition): string
+  createTable(def: CreateTableDefinition): Promise<void>
   close(): Promise<void>
 }
