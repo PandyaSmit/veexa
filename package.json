@@ -6,6 +6,10 @@
   "author": "Smit Pandya",
   "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PandyaSmit/veexa.git"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
