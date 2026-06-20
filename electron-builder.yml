@@ -3,6 +3,8 @@ productName: Veexa
 directories:
   output: dist
   buildResources: build
+publish:
+  provider: github
 files:
   - '**/*'
   - '!**/.vscode/*'
