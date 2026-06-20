@@ -160,6 +160,9 @@ Thumbs.db
 out/
 dist/
 release/
-build/
+build/*
 !build/icons/
+!build/icon.png
+!build/icon.icns
+!build/icon.ico
 !build/entitlements.mac.plist

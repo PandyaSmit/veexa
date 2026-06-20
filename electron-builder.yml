@@ -15,6 +15,7 @@ asarUnpack:
   - resources/**
 mac:
   category: public.app-category.developer-tools
+  icon: build/icon.png
   target:
     - target: dmg
       arch: [arm64, x64]

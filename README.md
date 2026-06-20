@@ -79,7 +79,3 @@ Security: `contextIsolation: true`, `nodeIntegration: false`, strict CSP, no Nod
 - `⌘⇧L` / `Ctrl+Shift+L` — Toggle light/dark theme
 - `⌘↩` / `Ctrl+Enter` — Run query
 - `⌘⇧E` / `Ctrl+Shift+E` — Export to CSV
-
-## Roadmap
-
-Phase 6: query cancellation + per-query timeout, streamed result chunks, transaction UI (begin/commit/rollback indicator), schema visualization graph.
