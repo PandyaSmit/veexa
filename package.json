@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Modern cross-platform database explorer",
   "main": "./out/main/index.js",
-  "author": "Smit Pandya",
+  "author": "Smit Pandya <smitpandya1099@gmail.com>",
   "license": "MIT",
   "private": true,
   "repository": {
