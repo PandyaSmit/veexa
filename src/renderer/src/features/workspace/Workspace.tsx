@@ -3,6 +3,7 @@ import { TabBar } from '../../components/TabBar'
 import { StartScreen } from '../../components/StartScreen'
 import { QueryTabView } from '../tabs/QueryTabView'
 import { TableTabView } from '../tabs/TableTabView'
+import { CreateTableView } from '../tabs/CreateTableView'
 import { useConnections } from '../../store/connections'
 import { useTabs } from '../../store/tabs'
 
@@ -36,6 +37,7 @@ export function Workspace() {
       <div className="flex-1 min-h-0">
         {current?.kind === 'query' && <QueryTabView tab={current} />}
         {current?.kind === 'table' && <TableTabView tab={current} />}
+        {current?.kind === 'create-table' && <CreateTableView tab={current} />}
       </div>
     </div>
   )

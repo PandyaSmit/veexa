@@ -4,6 +4,7 @@ import type {
   ColumnInfo,
   ConnectionConfig,
   ConnectionDraft,
+  CreateTableDefinition,
   CsvExportRequest,
   CsvExportResult,
   CsvImportResult,
@@ -49,7 +50,11 @@ const api = {
     commitMutations: (id: string, mutations: PendingMutation[]): Promise<void> =>
       ipcRenderer.invoke(IpcChannel.SessionCommitMutations, id, mutations),
     importCsv: (id: string, ref: TableRef): Promise<CsvImportResult> =>
-      ipcRenderer.invoke(IpcChannel.ImportCsv, id, ref)
+      ipcRenderer.invoke(IpcChannel.ImportCsv, id, ref),
+    previewCreateTable: (id: string, def: CreateTableDefinition): Promise<string> =>
+      ipcRenderer.invoke(IpcChannel.SessionPreviewCreateTable, id, def),
+    createTable: (id: string, def: CreateTableDefinition): Promise<void> =>
+      ipcRenderer.invoke(IpcChannel.SessionCreateTable, id, def)
   },
   savedQueries: {
     list: (): Promise<SavedQuery[]> => ipcRenderer.invoke(IpcChannel.SavedQueriesList),

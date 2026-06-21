@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise'
 import type {
   ColumnInfo,
   ConnectionConfig,
+  CreateTableDefinition,
   PendingMutation,
   QueryResult,
   SchemaNode,
@@ -116,11 +117,33 @@ export class MySqlDriver implements Driver {
       ? ` ORDER BY ${ident(opts.sortColumn)} ${opts.sortDir === 'desc' ? 'DESC' : 'ASC'}`
       : ''
     const params: unknown[] = []
-    let whereClause = ''
+    const conditions: string[] = []
     if (opts.filter) {
       params.push(opts.filter.value)
-      whereClause = ` WHERE ${ident(opts.filter.column)} = ?`
+      conditions.push(`${ident(opts.filter.column)} = ?`)
     }
+    if (opts.filters) {
+      for (const rule of opts.filters) {
+        if (!rule.enabled || !rule.column) continue
+        const col = ident(rule.column)
+        if (rule.operator === 'IS NULL') {
+          conditions.push(`${col} IS NULL`)
+        } else if (rule.operator === 'IS NOT NULL') {
+          conditions.push(`${col} IS NOT NULL`)
+        } else if (rule.operator === 'IN') {
+          const vals = rule.value.split(',').map((v) => v.trim())
+          const placeholders = vals.map((v) => {
+            params.push(v)
+            return '?'
+          })
+          conditions.push(`${col} IN (${placeholders.join(', ')})`)
+        } else {
+          params.push(rule.value)
+          conditions.push(`${col} ${rule.operator} ?`)
+        }
+      }
+    }
+    const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : ''
     const sql = `SELECT * FROM ${qualified(opts.ref)}${whereClause}${orderClause} LIMIT ${limit + 1} OFFSET ${offset}`
     const started = performance.now()
     const [rows, fields] = await this.db.query(sql, params)
@@ -220,6 +243,15 @@ export class MySqlDriver implements Driver {
     }
   }
 
+  previewCreateTable(def: CreateTableDefinition): string {
+    return buildCreateTableSql(def)
+  }
+
+  async createTable(def: CreateTableDefinition): Promise<void> {
+    const sql = buildCreateTableSql(def)
+    await this.db.query(sql)
+  }
+
   async close(): Promise<void> {
     await this.conn?.end()
     this.conn = null
@@ -277,4 +309,23 @@ function buildSql(m: PendingMutation, inlineValues: boolean): { text: string; va
     whereClause = `${ident(m.pk.column)} = ?`
   }
   return { text: `DELETE FROM ${table} WHERE ${whereClause}`, values }
+}
+
+function buildCreateTableSql(def: CreateTableDefinition): string {
+  const table = `${ident(def.schema)}.${ident(def.tableName)}`
+  const colDefs = def.columns.map(c => {
+    let sql = `${ident(c.name)} ${c.type}`
+    if (!c.nullable) sql += ' NOT NULL'
+    if (c.defaultValue !== null && c.defaultValue !== '') {
+      sql += ` DEFAULT ${c.defaultValue}`
+    }
+    return sql
+  })
+
+  const pks = def.columns.filter(c => c.isPrimaryKey)
+  if (pks.length > 0) {
+    colDefs.push(`PRIMARY KEY (${pks.map(c => ident(c.name)).join(', ')})`)
+  }
+
+  return `CREATE TABLE ${table} (\n  ${colDefs.join(',\n  ')}\n);`
 }

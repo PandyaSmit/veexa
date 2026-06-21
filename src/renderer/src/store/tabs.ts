@@ -6,7 +6,8 @@ import type {
   TableForeignKey,
   TablePage,
   TableRef,
-  TableStructure
+  TableStructure,
+  FilterRule
 } from '@shared/types'
 import { detectDestructive } from '@shared/ipc'
 import { splitStatements } from '@shared/sql'
@@ -50,6 +51,7 @@ export interface TableTab {
   structure: TableStructure | null
   foreignKeys: TableForeignKey[]
   filter: TableFilter | null
+  filterRules: FilterRule[]
   page: number
   pageSize: number
   sortColumn: string | null
@@ -65,12 +67,19 @@ export interface TableTab {
   pendingInserts: PendingInsert[]
 }
 
-export type Tab = QueryTab | TableTab
+export interface CreateTableTab {
+  kind: 'create-table'
+  id: string
+  connectionId: string
+  title: string
+}
+
+export type Tab = QueryTab | TableTab | CreateTableTab
 
 const PERSIST_KEY = 'veexa:tabs'
 
 interface PersistedTab {
-  kind: 'query' | 'table'
+  kind: 'query' | 'table' | 'create-table'
   connectionId: string
   title: string
   sql?: string
@@ -81,25 +90,31 @@ interface PersistedTab {
   sortColumn?: string | null
   sortDir?: 'asc' | 'desc'
   filter?: TableFilter | null
+  filterRules?: FilterRule[]
 }
 
 function persist(tabs: Tab[]): void {
-  const persisted: PersistedTab[] = tabs.map((t) =>
-    t.kind === 'query'
-      ? { kind: 'query', connectionId: t.connectionId, title: t.title, sql: t.sql }
-      : {
-          kind: 'table',
-          connectionId: t.connectionId,
-          title: t.title,
-          ref: t.ref,
-          view: t.view,
-          page: t.page,
-          pageSize: t.pageSize,
-          sortColumn: t.sortColumn,
-          sortDir: t.sortDir,
-          filter: t.filter
-        }
-  )
+  const persisted: PersistedTab[] = tabs.map((t) => {
+    if (t.kind === 'query') {
+      return { kind: 'query', connectionId: t.connectionId, title: t.title, sql: t.sql }
+    }
+    if (t.kind === 'create-table') {
+      return { kind: 'create-table', connectionId: t.connectionId, title: t.title }
+    }
+    return {
+      kind: 'table',
+      connectionId: t.connectionId,
+      title: t.title,
+      ref: t.ref,
+      view: t.view,
+      page: t.page,
+      pageSize: t.pageSize,
+      sortColumn: t.sortColumn,
+      sortDir: t.sortDir,
+      filter: t.filter,
+      filterRules: t.filterRules
+    }
+  })
   localStorage.setItem(PERSIST_KEY, JSON.stringify(persisted))
 }
 
@@ -120,6 +135,14 @@ function hydrate(): Tab[] {
           running: false
         }
       }
+      if (p.kind === 'create-table') {
+        return {
+          kind: 'create-table',
+          id,
+          connectionId: p.connectionId,
+          title: p.title
+        }
+      }
       return {
         kind: 'table',
         id,
@@ -131,6 +154,7 @@ function hydrate(): Tab[] {
         structure: null,
         foreignKeys: [],
         filter: p.filter ?? null,
+        filterRules: p.filterRules ?? [],
         page: p.page ?? 0,
         pageSize: p.pageSize ?? 100,
         sortColumn: p.sortColumn ?? null,
@@ -154,6 +178,7 @@ interface TabsState {
   hydrated: boolean
   openQueryTab: (connectionId: string, sql?: string, savedQueryId?: string) => string
   openTableTab: (connectionId: string, ref: TableRef, filter?: TableFilter | null) => string
+  openCreateTableTab: (connectionId: string) => string
   closeTab: (id: string) => void
   closeForConnection: (connectionId: string) => void
   setActive: (id: string | null) => void
@@ -166,6 +191,11 @@ interface TabsState {
   setTableSort: (id: string, column: string) => Promise<void>
   setTablePage: (id: string, page: number) => Promise<void>
   clearTableFilter: (id: string) => Promise<void>
+  addFilterRule: (id: string) => void
+  updateFilterRule: (id: string, ruleId: string, patch: Partial<FilterRule>) => void
+  removeFilterRule: (id: string, ruleId: string) => void
+  toggleFilterRule: (id: string, ruleId: string) => void
+  applyFilters: (id: string) => Promise<void>
   setActiveResult: (id: string, index: number) => void
   cancelQuery: (id: string) => Promise<void>
   editCell: (id: string, pkValue: unknown, column: string, value: unknown) => void
@@ -240,6 +270,7 @@ export const useTabs = create<TabsState>((set, get) => {
         structure: null,
         foreignKeys: [],
         filter: filter ?? null,
+        filterRules: [],
         page: 0,
         pageSize: 100,
         sortColumn: null,
@@ -250,6 +281,18 @@ export const useTabs = create<TabsState>((set, get) => {
         pendingEdits: {},
         pendingDeletes: [],
         pendingInserts: []
+      }
+      update(() => ({ tabs: [...get().tabs, tab], activeId: id }))
+      return id
+    },
+
+    openCreateTableTab(connectionId) {
+      const id = nextId()
+      const tab: CreateTableTab = {
+        kind: 'create-table',
+        id,
+        connectionId,
+        title: 'New Table'
       }
       update(() => ({ tabs: [...get().tabs, tab], activeId: id }))
       return id
@@ -330,7 +373,8 @@ export const useTabs = create<TabsState>((set, get) => {
           offset: tab.page * tab.pageSize,
           sortColumn: tab.sortColumn ?? undefined,
           sortDir: tab.sortDir,
-          filter: tab.filter ?? undefined
+          filter: tab.filter ?? undefined,
+          filters: tab.filterRules
         })
         get().patch(id, { data, loading: false } as Partial<TableTab>)
         // Lazily fetch FKs + structure (for PK detection) on first data load.
@@ -409,6 +453,46 @@ export const useTabs = create<TabsState>((set, get) => {
         /* swallow — cancellation may race with query completion */
       }
     },
+
+    addFilterRule(id) {
+      const tab = get().tabs.find((t) => t.id === id)
+      if (!tab || tab.kind !== 'table') return
+      const rule: FilterRule = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        column: '',
+        operator: '=',
+        value: '',
+        enabled: true
+      }
+      get().patch(id, { filterRules: [...tab.filterRules, rule] } as Partial<TableTab>)
+    },
+
+    updateFilterRule(id, ruleId, patch) {
+      const tab = get().tabs.find((t) => t.id === id)
+      if (!tab || tab.kind !== 'table') return
+      const nextRules = tab.filterRules.map((r) => (r.id === ruleId ? { ...r, ...patch } : r))
+      get().patch(id, { filterRules: nextRules } as Partial<TableTab>)
+    },
+
+    removeFilterRule(id, ruleId) {
+      const tab = get().tabs.find((t) => t.id === id)
+      if (!tab || tab.kind !== 'table') return
+      get().patch(id, { filterRules: tab.filterRules.filter((r) => r.id !== ruleId) } as Partial<TableTab>)
+    },
+
+    toggleFilterRule(id, ruleId) {
+      const tab = get().tabs.find((t) => t.id === id)
+      if (!tab || tab.kind !== 'table') return
+      const nextRules = tab.filterRules.map((r) => (r.id === ruleId ? { ...r, enabled: !r.enabled } : r))
+      get().patch(id, { filterRules: nextRules } as Partial<TableTab>)
+    },
+
+    async applyFilters(id) {
+      const tab = get().tabs.find((t) => t.id === id)
+      if (!tab || tab.kind !== 'table') return
+      await get().setTablePage(id, 0)
+    },
+
 
     editCell(id, pkValue, column, value) {
       const tab = get().tabs.find((t) => t.id === id)

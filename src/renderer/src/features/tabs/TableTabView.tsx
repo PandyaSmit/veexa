@@ -13,6 +13,7 @@ import {
 import { EditableDataGrid } from '../../components/EditableDataGrid'
 import { CellPeekModal } from '../../components/CellPeekModal'
 import { MutationPreviewDialog } from '../../components/MutationPreviewDialog'
+import { FilterBar } from '../../components/FilterBar'
 import { useTabs, type TableTab } from '../../store/tabs'
 import { useConnections } from '../../store/connections'
 import { exportRowsToCsv } from '../../lib/exportCsv'
@@ -37,6 +38,11 @@ export function TableTabView({ tab }: Props) {
   const discardPending = useTabs((s) => s.discardPending)
   const buildMutations = useTabs((s) => s.buildMutations)
   const commitPending = useTabs((s) => s.commitPending)
+  const addFilterRule = useTabs((s) => s.addFilterRule)
+  const updateFilterRule = useTabs((s) => s.updateFilterRule)
+  const removeFilterRule = useTabs((s) => s.removeFilterRule)
+  const toggleFilterRule = useTabs((s) => s.toggleFilterRule)
+  const applyFilters = useTabs((s) => s.applyFilters)
 
   const connection = useConnections((s) => s.items.find((c) => c.id === tab.connectionId)) ?? null
   const readOnly = !!connection?.readOnly
@@ -170,6 +176,15 @@ export function TableTabView({ tab }: Props) {
               </div>
             </div>
           )}
+          <FilterBar
+            columns={tab.data?.columns.map(c => c.name) ?? []}
+            rules={tab.filterRules}
+            onAdd={() => addFilterRule(tab.id)}
+            onUpdate={(ruleId, patch) => updateFilterRule(tab.id, ruleId, patch)}
+            onRemove={(ruleId) => removeFilterRule(tab.id, ruleId)}
+            onToggle={(ruleId) => toggleFilterRule(tab.id, ruleId)}
+            onApply={() => applyFilters(tab.id)}
+          />
           <DataView
             tab={tab}
             readOnly={readOnly}

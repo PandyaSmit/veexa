@@ -4,6 +4,7 @@ import { IpcChannel } from '@shared/ipc'
 import type {
   ConnectionConfig,
   ConnectionDraft,
+  CreateTableDefinition,
   CsvExportRequest,
   HistoryEntry,
   PendingMutation,
@@ -138,6 +139,23 @@ export function registerIpc(): void {
 
   ipcMain.handle(IpcChannel.SessionTableForeignKeys, (_evt, id: string, ref: TableRef) =>
     getSession(id).tableForeignKeys(ref)
+  )
+
+  ipcMain.handle(
+    IpcChannel.SessionPreviewCreateTable,
+    (_evt, id: string, def: CreateTableDefinition) => getSession(id).previewCreateTable(def)
+  )
+
+  ipcMain.handle(
+    IpcChannel.SessionCreateTable,
+    async (_evt, id: string, def: CreateTableDefinition) => {
+      const all = await connectionsStore.list()
+      const conn = all.find((c) => c.id === id)
+      if (conn?.readOnly) {
+        throw new Error('Connection is read-only; mutations are disabled.')
+      }
+      await getSession(id).createTable(def)
+    }
   )
 
   ipcMain.handle(

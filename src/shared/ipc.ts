@@ -21,6 +21,8 @@ export const IpcChannel = {
   HistoryClear: 'history:clear',
   ExportCsv: 'export:csv',
   ImportCsv: 'import:csv',
+  SessionCreateTable: 'session:create-table',
+  SessionPreviewCreateTable: 'session:preview-create-table',
   WindowMinimize: 'window:minimize',
   WindowMaximize: 'window:maximize',
   WindowClose: 'window:close',
