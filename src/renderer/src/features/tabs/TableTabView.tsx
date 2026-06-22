@@ -45,6 +45,7 @@ export function TableTabView({ tab }: Props) {
   const toggleFilterRule = useTabs((s) => s.toggleFilterRule)
   const applyFilters = useTabs((s) => s.applyFilters)
 
+
   const connection = useConnections((s) => s.items.find((c) => c.id === tab.connectionId)) ?? null
   const readOnly = !!connection?.readOnly
 

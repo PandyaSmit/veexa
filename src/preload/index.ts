@@ -5,6 +5,7 @@ import type {
   ConnectionConfig,
   ConnectionDraft,
   CreateTableDefinition,
+  CreateTableDefinition,
   CsvExportRequest,
   CsvExportResult,
   CsvImportResult,

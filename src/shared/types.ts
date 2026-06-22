@@ -136,6 +136,27 @@ export interface FilterRule {
   enabled: boolean
 }
 
+export type FilterOperator =
+  | '='
+  | '!='
+  | '>'
+  | '<'
+  | '>='
+  | '<='
+  | 'LIKE'
+  | 'NOT LIKE'
+  | 'IS NULL'
+  | 'IS NOT NULL'
+  | 'IN'
+
+export interface FilterRule {
+  id: string
+  column: string
+  operator: FilterOperator
+  value: string
+  enabled: boolean
+}
+
 export interface TableDataOptions {
   ref: TableRef
   limit: number
@@ -143,6 +164,7 @@ export interface TableDataOptions {
   sortColumn?: string
   sortDir?: 'asc' | 'desc'
   filter?: TableFilter
+  filters?: FilterRule[]
   filters?: FilterRule[]
 }
 

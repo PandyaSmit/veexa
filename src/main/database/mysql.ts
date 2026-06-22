@@ -3,6 +3,7 @@ import type {
   ColumnInfo,
   ConnectionConfig,
   CreateTableDefinition,
+  CreateTableDefinition,
   PendingMutation,
   QueryResult,
   SchemaNode,
