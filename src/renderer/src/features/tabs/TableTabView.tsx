@@ -16,6 +16,7 @@ import { MutationPreviewDialog } from '../../components/MutationPreviewDialog'
 import { FilterBar } from '../../components/FilterBar'
 import { useTabs, type TableTab } from '../../store/tabs'
 import { useConnections } from '../../store/connections'
+import { StructureView } from './StructureView'
 import { exportRowsToCsv } from '../../lib/exportCsv'
 
 interface Props {
@@ -177,7 +178,7 @@ export function TableTabView({ tab }: Props) {
             </div>
           )}
           <FilterBar
-            columns={tab.data?.columns.map(c => c.name) ?? []}
+            columns={tab.structure?.columns.map(c => c.name) ?? tab.data?.columns.map(c => c.name) ?? []}
             rules={tab.filterRules}
             onAdd={() => addFilterRule(tab.id)}
             onUpdate={(ruleId, patch) => updateFilterRule(tab.id, ruleId, patch)}
@@ -444,69 +445,3 @@ function PagerButton({
   )
 }
 
-function StructureView({ tab }: { tab: TableTab }) {
-  const s = tab.structure
-  return (
-    <div className="flex-1 min-h-0 overflow-auto p-4 text-xs">
-      {tab.error && <div className="text-danger font-mono mb-3">{tab.error}</div>}
-      {!s && !tab.error && <div className="text-fg-subtle">Loading structure…</div>}
-      {s && (
-        <>
-          <div className="text-fg-muted mb-2 font-medium">Columns</div>
-          <table className="w-full text-fg mb-6 border-collapse">
-            <thead className="text-fg-subtle text-left">
-              <tr>
-                <th className="font-normal pb-1.5 pr-4">Name</th>
-                <th className="font-normal pb-1.5 pr-4">Type</th>
-                <th className="font-normal pb-1.5 pr-4">Nullable</th>
-                <th className="font-normal pb-1.5 pr-4">Default</th>
-                <th className="font-normal pb-1.5">Key</th>
-              </tr>
-            </thead>
-            <tbody>
-              {s.columns.map((c) => (
-                <tr key={c.name} className="border-t border-line/60">
-                  <td className="py-1 pr-4 font-mono">{c.name}</td>
-                  <td className="py-1 pr-4 font-mono text-fg-muted">{c.type}</td>
-                  <td className="py-1 pr-4">{c.nullable ? 'YES' : 'NO'}</td>
-                  <td className="py-1 pr-4 font-mono text-fg-subtle">{c.default ?? '—'}</td>
-                  <td className="py-1">
-                    {c.isPrimaryKey && (
-                      <span className="text-accent font-medium text-[10px]">PK</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="text-fg-muted mb-2 font-medium">Indexes</div>
-          {s.indexes.length === 0 ? (
-            <div className="text-fg-subtle">No indexes</div>
-          ) : (
-            <table className="w-full text-fg border-collapse">
-              <thead className="text-fg-subtle text-left">
-                <tr>
-                  <th className="font-normal pb-1.5 pr-4">Name</th>
-                  <th className="font-normal pb-1.5 pr-4">Columns</th>
-                  <th className="font-normal pb-1.5 pr-4">Unique</th>
-                  <th className="font-normal pb-1.5">Primary</th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.indexes.map((i) => (
-                  <tr key={i.name} className="border-t border-line/60">
-                    <td className="py-1 pr-4 font-mono">{i.name}</td>
-                    <td className="py-1 pr-4 font-mono text-fg-muted">{i.columns.join(', ')}</td>
-                    <td className="py-1">{i.unique ? 'YES' : 'NO'}</td>
-                    <td className="py-1">{i.primary ? 'YES' : ''}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
-      )}
-    </div>
-  )
-}

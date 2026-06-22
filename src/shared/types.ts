@@ -179,6 +179,15 @@ export interface CsvImportResult {
   rowCount: number
 }
 
+export type AlterColumnAction =
+  | { kind: 'add'; column: CreateTableColumn }
+  | { kind: 'drop'; column: string }
+  | { kind: 'modify'; column: string; changes: Partial<CreateTableColumn> }
+
+export interface AlterTableDefinition {
+  actions: AlterColumnAction[]
+}
+
 export interface CreateTableColumn {
   name: string
   type: string

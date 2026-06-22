@@ -102,23 +102,29 @@ export function FilterBar({
 
       {/* Rules */}
       {expanded !== false && rules.length > 0 && (
-        <div className="px-3 py-1.5 space-y-1">
-          {rules.map((rule) => (
-            <div key={rule.id} className="flex items-center gap-1.5" onKeyDown={handleKeyDown}>
+        <div className="px-3 py-2 flex flex-wrap gap-2 items-center bg-surface-raised/20">
+          {rules.map((rule, index) => (
+            <div 
+              key={rule.id} 
+              className="flex items-center gap-1.5 bg-surface-elevated border border-line rounded-md px-1.5 py-1 shadow-sm transition-colors hover:border-line/80 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/20" 
+              onKeyDown={handleKeyDown}
+            >
               {/* Toggle */}
               <button
                 onClick={() => onToggle(rule.id)}
-                className={`p-0.5 rounded ${rule.enabled ? 'text-accent' : 'text-fg-muted opacity-50'} hover:opacity-100`}
+                className={`p-0.5 rounded ${rule.enabled ? 'text-accent' : 'text-fg-muted opacity-50'} hover:opacity-100 hover:bg-fg/5`}
                 title={rule.enabled ? 'Disable rule' : 'Enable rule'}
               >
                 {rule.enabled ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
               </button>
 
+              {index > 0 && <span className="text-[10px] font-semibold text-fg-subtle px-0.5">AND</span>}
+
               {/* Column select */}
               <select
                 value={rule.column}
                 onChange={(e) => onUpdate(rule.id, { column: e.target.value })}
-                className="bg-surface-elevated border border-line rounded px-1.5 py-0.5 text-fg text-[11px] min-w-[100px] max-w-[160px] outline-none focus:border-accent/60"
+                className="bg-transparent text-fg text-[11px] outline-none max-w-[120px] font-medium"
               >
                 <option value="">Column…</option>
                 {columns.map((col) => (
@@ -132,7 +138,7 @@ export function FilterBar({
               <select
                 value={rule.operator}
                 onChange={(e) => onUpdate(rule.id, { operator: e.target.value as FilterOperator })}
-                className="bg-surface-elevated border border-line rounded px-1.5 py-0.5 text-fg text-[11px] min-w-[70px] outline-none focus:border-accent/60"
+                className="bg-transparent text-accent text-[11px] font-medium outline-none min-w-[30px]"
               >
                 {OPERATORS.map((op) => (
                   <option key={op.value} value={op.value}>
@@ -148,14 +154,14 @@ export function FilterBar({
                   value={rule.value}
                   onChange={(e) => onUpdate(rule.id, { value: e.target.value })}
                   placeholder={rule.operator === 'IN' ? 'val1, val2, …' : 'value'}
-                  className="bg-surface-elevated border border-line rounded px-1.5 py-0.5 text-fg text-[11px] min-w-[120px] flex-1 max-w-[240px] outline-none focus:border-accent/60 placeholder:text-fg-subtle/50"
+                  className="bg-transparent text-fg text-[11px] min-w-[80px] w-full max-w-[150px] outline-none placeholder:text-fg-subtle/50"
                 />
               )}
 
               {/* Remove button */}
               <button
                 onClick={() => onRemove(rule.id)}
-                className="p-0.5 rounded text-fg-muted hover:text-danger"
+                className="p-0.5 rounded text-fg-muted hover:text-danger hover:bg-danger/10 ml-0.5"
                 title="Remove rule"
               >
                 <X size={12} />

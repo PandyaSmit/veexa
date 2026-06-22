@@ -176,6 +176,26 @@ export function registerIpc(): void {
     }
   )
 
+
+
+  ipcMain.handle(IpcChannel.SessionDropTable, async (_evt, id: string, ref: TableRef) => {
+    const all = await connectionsStore.list()
+    const conn = all.find((c) => c.id === id)
+    if (conn?.readOnly) throw new Error('Connection is read-only')
+    await getSession(id).dropTable(ref)
+  })
+
+  ipcMain.handle(IpcChannel.SessionPreviewAlterTable, (_evt, id: string, ref: TableRef, def: AlterTableDefinition) => {
+    return getSession(id).previewAlterTable(ref, def)
+  })
+
+  ipcMain.handle(IpcChannel.SessionAlterTable, async (_evt, id: string, ref: TableRef, def: AlterTableDefinition) => {
+    const all = await connectionsStore.list()
+    const conn = all.find((c) => c.id === id)
+    if (conn?.readOnly) throw new Error('Connection is read-only')
+    await getSession(id).alterTable(ref, def)
+  })
+
   ipcMain.handle(IpcChannel.SavedQueriesList, () => savedQueries.list())
   ipcMain.handle(IpcChannel.SavedQueriesUpsert, (_evt, q: SavedQuery) => savedQueries.upsert(q))
   ipcMain.handle(IpcChannel.SavedQueriesDelete, (_evt, id: string) => savedQueries.delete(id))
