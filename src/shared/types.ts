@@ -136,6 +136,27 @@ export interface FilterRule {
   enabled: boolean
 }
 
+export type FilterOperator =
+  | '='
+  | '!='
+  | '>'
+  | '<'
+  | '>='
+  | '<='
+  | 'LIKE'
+  | 'NOT LIKE'
+  | 'IS NULL'
+  | 'IS NOT NULL'
+  | 'IN'
+
+export interface FilterRule {
+  id: string
+  column: string
+  operator: FilterOperator
+  value: string
+  enabled: boolean
+}
+
 export interface TableDataOptions {
   ref: TableRef
   limit: number
@@ -143,6 +164,7 @@ export interface TableDataOptions {
   sortColumn?: string
   sortDir?: 'asc' | 'desc'
   filter?: TableFilter
+  filters?: FilterRule[]
   filters?: FilterRule[]
 }
 
@@ -177,6 +199,15 @@ export interface TablePage {
 export interface CsvImportResult {
   imported: boolean
   rowCount: number
+}
+
+export type AlterColumnAction =
+  | { kind: 'add'; column: CreateTableColumn }
+  | { kind: 'drop'; column: string }
+  | { kind: 'modify'; column: string; changes: Partial<CreateTableColumn> }
+
+export interface AlterTableDefinition {
+  actions: AlterColumnAction[]
 }
 
 export interface CreateTableColumn {

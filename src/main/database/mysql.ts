@@ -3,6 +3,7 @@ import type {
   ColumnInfo,
   ConnectionConfig,
   CreateTableDefinition,
+  CreateTableDefinition,
   PendingMutation,
   QueryResult,
   SchemaNode,
@@ -10,7 +11,8 @@ import type {
   TableForeignKey,
   TablePage,
   TableRef,
-  TableStructure
+  TableStructure,
+  AlterTableDefinition
 } from '@shared/types'
 import type { Driver } from './types'
 
@@ -252,6 +254,32 @@ export class MySqlDriver implements Driver {
     await this.db.query(sql)
   }
 
+  async dropTable(ref: TableRef): Promise<void> {
+    const sql = `DROP TABLE ${ident(ref.schema)}.${ident(ref.name)}`
+    await this.db.query(sql)
+  }
+
+  previewAlterTable(ref: TableRef, def: AlterTableDefinition): string[] {
+    return buildAlterTableSql(ref, def)
+  }
+
+  async alterTable(ref: TableRef, def: AlterTableDefinition): Promise<void> {
+    const stmts = buildAlterTableSql(ref, def)
+    if (stmts.length === 0) return
+    
+    const conn = this.db
+    await conn.beginTransaction()
+    try {
+      for (const stmt of stmts) {
+        await conn.query(stmt)
+      }
+      await conn.commit()
+    } catch (err) {
+      await conn.rollback().catch(() => {})
+      throw err
+    }
+  }
+
   async close(): Promise<void> {
     await this.conn?.end()
     this.conn = null
@@ -328,4 +356,42 @@ function buildCreateTableSql(def: CreateTableDefinition): string {
   }
 
   return `CREATE TABLE ${table} (\n  ${colDefs.join(',\n  ')}\n);`
+}
+
+function buildAlterTableSql(ref: TableRef, def: AlterTableDefinition): string[] {
+  const table = `${ident(ref.schema)}.${ident(ref.name)}`
+  const stmts: string[] = []
+
+  for (const action of def.actions) {
+    if (action.kind === 'add') {
+      const c = action.column
+      let sql = `ADD COLUMN ${ident(c.name)} ${c.type}`
+      if (!c.nullable) sql += ' NOT NULL'
+      if (c.defaultValue !== null && c.defaultValue !== '') {
+        sql += ` DEFAULT ${c.defaultValue}`
+      }
+      stmts.push(`ALTER TABLE ${table} ${sql};`)
+    } else if (action.kind === 'drop') {
+      stmts.push(`ALTER TABLE ${table} DROP COLUMN ${ident(action.column)};`)
+    } else if (action.kind === 'modify') {
+      if (action.changes.name && action.changes.name !== action.column) {
+         stmts.push(`ALTER TABLE ${table} RENAME COLUMN ${ident(action.column)} TO ${ident(action.changes.name)};`)
+      }
+      let modifySql = `MODIFY COLUMN ${ident(action.changes.name || action.column)}`
+      if (action.changes.type) modifySql += ` ${action.changes.type}`
+      if (action.changes.nullable === true) modifySql += ` NULL`
+      if (action.changes.nullable === false) modifySql += ` NOT NULL`
+      if (action.changes.defaultValue !== undefined) {
+         if (action.changes.defaultValue === null || action.changes.defaultValue === '') {
+            modifySql += ` DEFAULT NULL`
+         } else {
+            modifySql += ` DEFAULT ${action.changes.defaultValue}`
+         }
+      }
+      if (action.changes.type || action.changes.nullable !== undefined || action.changes.defaultValue !== undefined) {
+        stmts.push(`ALTER TABLE ${table} ${modifySql};`)
+      }
+    }
+  }
+  return stmts
 }

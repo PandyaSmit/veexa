@@ -29,6 +29,11 @@ interface EditingCell {
   column: string
 }
 
+interface CellPosition {
+  r: number
+  c: number
+}
+
 const ACTION_COL_WIDTH = 32
 const COL_WIDTH = 180
 
@@ -53,6 +58,7 @@ export function EditableDataGrid({
 }: Props) {
   const parentRef = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState<EditingCell | null>(null)
+  const [focused, setFocused] = useState<CellPosition | null>(null)
   const editable = !readOnly && !!primaryKey
 
   const pkIndex = primaryKey ? data.columns.indexOf(primaryKey) : -1
@@ -73,15 +79,46 @@ export function EditableDataGrid({
   }
   const stopEdit = () => setEditing(null)
 
-  // Click outside to commit edit
+  // Keyboard navigation & Esc to cancel edit
   useEffect(() => {
-    if (!editing) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') stopEdit()
+      if (editing) {
+        if (e.key === 'Escape') stopEdit()
+        return
+      }
+      
+      if (!focused) return
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setFocused((prev) => (prev && prev.r > 0 ? { r: prev.r - 1, c: prev.c } : prev))
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setFocused((prev) => (prev && prev.r < totalRows - 1 ? { r: prev.r + 1, c: prev.c } : prev))
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setFocused((prev) => (prev && prev.c > 0 ? { r: prev.r, c: prev.c - 1 } : prev))
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        setFocused((prev) => (prev && prev.c < data.columns.length - 1 ? { r: prev.r, c: prev.c + 1 } : prev))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        if (!editable) return
+        const isInsertRow = focused.r >= data.rows.length
+        if (isInsertRow) {
+          const ins = pendingInserts[focused.r - data.rows.length]
+          startEdit(ins.id, data.columns[focused.c])
+        } else {
+          const row = data.rows[focused.r]
+          const pkValue = pkIndex >= 0 ? row[pkIndex] : null
+          const pkKey = pkValue !== null && pkValue !== undefined ? String(pkValue) : null
+          if (pkKey) startEdit(pkKey, data.columns[focused.c])
+        }
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editing])
+  }, [editing, focused, totalRows, data, pendingInserts, pkIndex, editable])
 
   return (
     <div ref={parentRef} className="h-full overflow-auto font-mono text-xs bg-surface">
@@ -131,6 +168,8 @@ export function EditableDataGrid({
                   editing={
                     editing?.rowKey === ins.id ? editing.column : null
                   }
+                  focusedCol={focused?.r === vr.index ? focused.c : null}
+                  onFocusCell={(colIndex) => setFocused({ r: vr.index, c: colIndex })}
                   onStartEdit={(col) => setEditing({ rowKey: ins.id, column: col })}
                   onCommit={(col, val) => {
                     onUpdateInsert?.(ins.id, col, val)
@@ -215,12 +254,16 @@ export function EditableDataGrid({
                       key={i}
                       style={{ width: widths[i] }}
                       onClick={(e) => {
+                        setFocused({ r: vr.index, c: i })
                         if (isFk && onFkClick) {
                           e.stopPropagation()
                           onFkClick(col, original)
-                        } else {
-                          onCellPeek?.(col, value)
                         }
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setFocused({ r: vr.index, c: i })
+                        onCellPeek?.(col, value)
                       }}
                       onDoubleClick={(e) => {
                         if (!editable || !pkKey || isDeleted) return
@@ -228,15 +271,17 @@ export function EditableDataGrid({
                         startEdit(pkKey, col)
                       }}
                       className={`px-2 py-1 truncate border-r border-line/40 cursor-pointer ${
-                        hasEdit
-                          ? 'bg-accent/15 text-fg'
-                          : isNull
-                            ? 'text-fg-subtle italic'
-                            : isFk
-                              ? 'text-accent underline decoration-dotted underline-offset-2'
-                              : 'text-fg'
+                        focused?.r === vr.index && focused?.c === i
+                          ? 'ring-1 ring-inset ring-accent bg-accent/10 z-10'
+                          : hasEdit
+                            ? 'bg-accent/15 text-fg'
+                            : isNull
+                              ? 'text-fg-subtle italic'
+                              : isFk
+                                ? 'text-accent underline decoration-dotted underline-offset-2'
+                                : 'text-fg'
                       }`}
-                      title={editable && pkKey && !isDeleted ? 'Double-click to edit' : undefined}
+                      title={editable && pkKey && !isDeleted ? 'Enter or double-click to edit' : undefined}
                     >
                       {formatCell(value)}
                     </div>
@@ -258,6 +303,8 @@ function InsertRow({
   top,
   height,
   editing,
+  focusedCol,
+  onFocusCell,
   onStartEdit,
   onCommit,
   onCancel,
@@ -269,6 +316,8 @@ function InsertRow({
   top: number
   height: number
   editing: string | null
+  focusedCol?: number | null
+  onFocusCell?: (c: number) => void
   onStartEdit: (column: string) => void
   onCommit: (column: string, value: unknown) => void
   onCancel: () => void
@@ -316,10 +365,11 @@ function InsertRow({
           <div
             key={i}
             style={{ width: widths[i] }}
-            onClick={() => onStartEdit(col)}
+            onClick={() => onFocusCell?.(i)}
+            onDoubleClick={() => onStartEdit(col)}
             className={`px-2 py-1 truncate border-r border-line/40 cursor-text ${
-              isNull ? 'text-fg-subtle italic' : 'text-fg'
-            }`}
+              focusedCol === i ? 'ring-1 ring-inset ring-accent bg-accent/10 z-10' : ''
+            } ${isNull ? 'text-fg-subtle italic' : 'text-fg'}`}
           >
             {isNull ? 'DEFAULT' : formatCell(value)}
           </div>

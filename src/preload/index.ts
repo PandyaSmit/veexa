@@ -5,6 +5,7 @@ import type {
   ConnectionConfig,
   ConnectionDraft,
   CreateTableDefinition,
+  CreateTableDefinition,
   CsvExportRequest,
   CsvExportResult,
   CsvImportResult,
@@ -18,7 +19,8 @@ import type {
   TablePage,
   TableRef,
   TableStructure,
-  TestResult
+  TestResult,
+  AlterTableDefinition
 } from '../shared/types'
 
 type Draft = ConnectionDraft & { id?: string }
@@ -54,7 +56,13 @@ const api = {
     previewCreateTable: (id: string, def: CreateTableDefinition): Promise<string> =>
       ipcRenderer.invoke(IpcChannel.SessionPreviewCreateTable, id, def),
     createTable: (id: string, def: CreateTableDefinition): Promise<void> =>
-      ipcRenderer.invoke(IpcChannel.SessionCreateTable, id, def)
+      ipcRenderer.invoke(IpcChannel.SessionCreateTable, id, def),
+    dropTable: (id: string, ref: TableRef): Promise<void> =>
+      ipcRenderer.invoke(IpcChannel.SessionDropTable, id, ref),
+    previewAlterTable: (id: string, ref: TableRef, def: AlterTableDefinition): Promise<string[]> =>
+      ipcRenderer.invoke(IpcChannel.SessionPreviewAlterTable, id, ref, def),
+    alterTable: (id: string, ref: TableRef, def: AlterTableDefinition): Promise<void> =>
+      ipcRenderer.invoke(IpcChannel.SessionAlterTable, id, ref, def)
   },
   savedQueries: {
     list: (): Promise<SavedQuery[]> => ipcRenderer.invoke(IpcChannel.SavedQueriesList),

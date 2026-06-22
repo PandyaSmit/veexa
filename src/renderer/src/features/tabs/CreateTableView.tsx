@@ -88,6 +88,7 @@ export function CreateTableView({ tab }: Props) {
       // Success! Close this tab and open the table data tab
       const openTableTab = useTabs.getState().openTableTab
       const closeTab = useTabs.getState().closeTab
+      window.dispatchEvent(new CustomEvent('schema-changed'))
       closeTab(tab.id)
       openTableTab(tab.connectionId, { schema, name: tableName })
       // Trigger a sidebar refresh by reopening session or similar...
@@ -115,14 +116,16 @@ export function CreateTableView({ tab }: Props) {
         <div className="flex gap-4 mb-8">
           <div className="flex flex-col gap-1.5 w-48">
             <label className="text-xs font-medium text-fg-muted uppercase tracking-wider">Schema</label>
-            <select 
-              value={schema} 
+            <input 
+              value={schema}
               onChange={e => setSchema(e.target.value)}
+              list="schema-list"
               className="bg-surface-elevated border border-line rounded px-2 py-1.5 text-sm outline-none focus:border-accent"
-            >
-              {schemas.map(s => <option key={s} value={s}>{s}</option>)}
-              {!schemas.includes(schema) && schema && <option value={schema}>{schema}</option>}
-            </select>
+              placeholder="e.g. public"
+            />
+            <datalist id="schema-list">
+              {schemas.map(s => <option key={s} value={s} />)}
+            </datalist>
           </div>
           <div className="flex flex-col gap-1.5 flex-1">
             <label className="text-xs font-medium text-fg-muted uppercase tracking-wider">Table Name</label>

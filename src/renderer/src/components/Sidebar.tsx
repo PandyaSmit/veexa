@@ -11,7 +11,8 @@ import {
   Plus,
   Search,
   Table2,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react'
 import { useConnections } from '../store/connections'
 import { useUi } from '../store/ui'
@@ -44,6 +45,13 @@ export function Sidebar() {
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [expandedSection, setExpandedSection] = useState<Record<string, boolean>>({})
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    const handleSchemaChanged = () => setRefreshKey(k => k + 1)
+    window.addEventListener('schema-changed', handleSchemaChanged)
+    return () => window.removeEventListener('schema-changed', handleSchemaChanged)
+  }, [])
 
   const activeConnection = items.find((c) => c.id === activeId) ?? null
 
@@ -92,7 +100,7 @@ export function Sidebar() {
     return () => {
       cancelled = true
     }
-  }, [activeId])
+  }, [activeId, refreshKey])
 
   const filtered = useMemo(() => filterSchema(schema, filter), [schema, filter])
   const autoExpand = filter.length > 0
@@ -131,6 +139,18 @@ export function Sidebar() {
                 {activeConnection.driver} · {activeConnection.host}/{activeConnection.database}
               </div>
             </div>
+            <button
+              onClick={() => {
+                if (activeId) {
+                  loadSchemaCache(activeId)
+                  setRefreshKey(k => k + 1)
+                }
+              }}
+              className="no-drag p-1 rounded text-fg-muted hover:text-accent hover:bg-fg/5"
+              title="Refresh Schema"
+            >
+              <RefreshCw size={12} />
+            </button>
           </div>
         </>
       ) : (

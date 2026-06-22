@@ -2,6 +2,7 @@ import type {
   ColumnInfo,
   ConnectionConfig,
   CreateTableDefinition,
+  CreateTableDefinition,
   PendingMutation,
   QueryResult,
   SchemaNode,
@@ -9,7 +10,8 @@ import type {
   TableForeignKey,
   TablePage,
   TableRef,
-  TableStructure
+  TableStructure,
+  AlterTableDefinition
 } from '@shared/types'
 
 export interface Driver {
@@ -25,5 +27,8 @@ export interface Driver {
   commitMutations(mutations: PendingMutation[]): Promise<void>
   previewCreateTable(def: CreateTableDefinition): string
   createTable(def: CreateTableDefinition): Promise<void>
+  dropTable(ref: TableRef): Promise<void>
+  previewAlterTable(ref: TableRef, def: AlterTableDefinition): string[]
+  alterTable(ref: TableRef, def: AlterTableDefinition): Promise<void>
   close(): Promise<void>
 }
